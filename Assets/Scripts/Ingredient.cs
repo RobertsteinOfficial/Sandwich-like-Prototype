@@ -215,6 +215,16 @@ public class Ingredient : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// sets a new ID for the ingredient
+    /// </summary>
+    /// <param name="value"> new ID for the ingredient </param>
+    public void SetNewID(int value)
+    {
+        iD = value;
+        ActualID = value;
+    }
+
     private void OnDrawGizmos()
     {
         //shows a different gizmo color depending if the tile is empty, is bread,or another ingredient

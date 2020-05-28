@@ -9,25 +9,74 @@ public class MatrixManager : MonoBehaviour
 
     [Header("Board Dimension")]
     [SerializeField] private int boardHeight;
+    public int BoardHeight { get { return boardHeight; } }
     [SerializeField] private int boardLength;
+    public int BoardLength { get { return boardLength; } }
 
     [Header("Ingredients")]
     [SerializeField] private Transform[] ingredients;
 
+    public Ingredient selectedIngredient { get; set; }
+    Ingredient targetIngredient;
+
     [Header("UI")]
     [SerializeField] private GameObject victoryPanel;
 
-    public Ingredient selectedIngredient { get; set; }
+    [Header("Save / Load")]
+    [SerializeField] private bool loadLevel;
 
-    int totalIngredients = 0;
+    public LevelGenerator LG { get; private set; }
+    public PersistentStorage Storage { get; private set; }
     Ingredient[,] logicMatrix;
-    Ingredient targetIngredient;
+    int totalIngredients = 0;
     bool isSwiping;
 
+    private void Awake()
+    {
+        LG = FindObjectOfType<LevelGenerator>();
+        Storage = FindObjectOfType<PersistentStorage>();
+
+        if (LG != null)
+        {
+            LG.BoardHeight = boardHeight;
+            LG.BoardLength = boardLength;
+            LG.NOfIngredients = ingredients.Length;
+        }
+    }
 
     private void Start()
     {
         SetupLogicMatrix();
+    }
+
+    /// <summary>
+    /// generates a new level based on a matrix create by the LevelGenerator
+    /// </summary>
+    public void GenerateNewLevel()
+    {
+        if (LG != null)
+        {
+            int[,] newLevel;
+
+            if (loadLevel)
+            {
+                newLevel = Storage.LoadLevel(LG);
+            }
+            else
+            {
+                newLevel = LG.SetupNewLevel();
+            }
+
+            for (int i = 0; i < boardLength; i++)
+            {
+                for (int j = 0; j < boardHeight; j++)
+                {
+                    logicMatrix[i, j].SetNewID(newLevel[i, j]);
+                }
+            }
+
+            SetupLogicMatrix();
+        }
     }
 
     /// <summary>
@@ -37,33 +86,6 @@ public class MatrixManager : MonoBehaviour
     {
         selectedIngredient = null;
         targetIngredient = null;
-    }
-
-    /// <summary>
-    /// spawns the food on the grid based on the Ingredients' IDs
-    /// </summary>
-    public void SetupLogicMatrix()
-    {
-        ShowVictory(false);
-        totalIngredients = 0;
-        logicMatrix = new Ingredient[boardLength, boardHeight];
-
-        for (int i = 0; i < boardHeight * boardLength; i++)
-        {
-            Ingredient temp = transform.GetChild(i).GetComponent<Ingredient>();
-            temp.SetupIngredient();
-            if (temp.ActualID >= 0)
-            {
-                Transform mesh = Instantiate(ingredients[temp.ActualID], temp.transform);
-                mesh.localPosition = Vector3.zero;
-                ++totalIngredients;
-            }
-
-            temp.XIndex = (int)(temp.transform.position.x + 1.5f);
-            temp.YIndex = (int)(temp.transform.position.z + 1.5f);
-
-            logicMatrix[temp.XIndex, temp.YIndex] = temp;
-        }
     }
 
     /// <summary>
@@ -187,6 +209,33 @@ public class MatrixManager : MonoBehaviour
 
         ResetIngredients();
         isSwiping = false;
+    }
+
+    /// <summary>
+    /// spawns the food on the grid based on the Ingredients' IDs
+    /// </summary>
+    void SetupLogicMatrix()
+    {
+        ShowVictory(false);
+        totalIngredients = 0;
+        logicMatrix = new Ingredient[boardLength, boardHeight];
+
+        for (int i = 0; i < boardHeight * boardLength; i++)
+        {
+            Ingredient temp = transform.GetChild(i).GetComponent<Ingredient>();
+            temp.SetupIngredient();
+            if (temp.ActualID >= 0)
+            {
+                Transform mesh = Instantiate(ingredients[temp.ActualID], temp.transform);
+                mesh.localPosition = Vector3.zero;
+                ++totalIngredients;
+            }
+
+            temp.XIndex = (int)(temp.transform.position.x + 1.5f);
+            temp.YIndex = (int)(temp.transform.position.z + 1.5f);
+
+            logicMatrix[temp.XIndex, temp.YIndex] = temp;
+        }
     }
 
     /// <summary>
